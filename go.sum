@@ -1,0 +1,10 @@
+github.com/davidminor/uint128 v0.0.0-20141227063632-5745f1bf8041 h1:qoi7yYjM3LLf46ywYZhfnlBDvomgARPXoHrHin0VMr4=
+github.com/davidminor/uint128 v0.0.0-20141227063632-5745f1bf8041/go.mod h1:UnAjMMJUoLZbyh4yvwvprpO8Kx81XI/O7ovDLbjaNok=
+github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=
+github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
+github.com/mumax/3 v3.9.3+incompatible h1:rdM/gWUe4RT4mTFfQQ6Egc11zcRTUGKpP88m+8AZETU=
+github.com/mumax/3 v3.9.3+incompatible/go.mod h1:hECbbdxU2IvQG0vNb4kdRCYDddUlGz7yAadb5pXOWX4=
+github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=
+github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
+github.com/rafaelescrich/3 v3.9.3+incompatible h1:XjpsVyl4jgkEpwKYWGroiIAdFzz7NxTwhPfCYEFb/C4=
+github.com/rafaelescrich/3 v3.9.3+incompatible/go.mod h1:v7Jji4mIJ0daFbv2xpNpZtUa0RHieoKlvGMmN1Jau5Q=

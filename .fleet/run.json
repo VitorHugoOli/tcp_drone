@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+          "type": "go",
+          "name": "tcp_drone",
+          "goExecPath": "/Users/vitorhugo/",
+          "buildTargets": []
+        },
+      {
+        "type": "python",
+        "name": "teste"
+      }
+
+    ]
+}
