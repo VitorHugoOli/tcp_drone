@@ -10,28 +10,6 @@ type MutationFunc func(solution *Model.Solution)
 
 // swapMutation performs swap mutation on a solution
 func swapMutation(solution *Model.Solution) {
-	// get random positions
-	//var (
-	//	pos1 = rand.Intn(len(solution.Route)-2) + 1
-	//	pos2 = rand.Intn(len(solution.Route)-2) + 1
-	//)
-	//
-	//for pos1 == 0 || pos2 == 0 || pos1 == len(solution.Route)-1 || pos2 == len(solution.Route)-1 || solution.Route[pos1] == solution.Route[pos2] {
-	//	pos1 = rand.Intn(len(solution.Route)-2) + 1
-	//	pos2 = rand.Intn(len(solution.Route)-2) + 1
-	//}
-	//
-	//// swap values
-	//solution.Route[pos1], solution.Route[pos2] = solution.Route[pos2], solution.Route[pos1]
-	//
-	//for pos1 == pos2 || pos1 == 0 || pos2 == 0 || pos1 == len(solution.Route)-1 || pos2 == len(solution.Route)-1 {
-	//	pos1 = rand.Intn(len(solution.Route)-2) + 1
-	//	pos2 = rand.Intn(len(solution.Route)-2) + 1
-	//}
-	//
-	//// change sign of values
-	//solution.Route[pos1] = -solution.Route[pos1]
-	//solution.Route[pos2] = -solution.Route[pos2]
 
 	global_search.PerturbationNodes(solution)
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"sync"
 	"tcp_drone/heuristics/builders"
 	local_search_drone "tcp_drone/heuristics/local_search_drone"
 	Model "tcp_drone/model"
@@ -71,9 +72,9 @@ func geneticAlgorithm(city *Model.City, solution *Model.Solution) {
 	// init genetic model
 	geneticModel := GeneticModel{
 		Settings: GeneticSettings{
-			Generations:    10000,
+			Generations:    100000,
 			MutationRate:   0.5,
-			CrossoverRate:  0.7,
+			CrossoverRate:  1,
 			Elitism:        true,
 			ElitismSize:    elitismSize,
 			SelectionType:  "tournament",
@@ -142,7 +143,7 @@ func (geneticModel *GeneticModel) Run() Model.Solution {
 	copy(geneticModel.BestSolution.Route, geneticModel.Population[0].Route)
 	geneticModel.BestSolution.RouteTime = geneticModel.Population[0].RouteTime
 
-	fmt.Println("Best Start solution: ", geneticModel.BestSolution.RouteTime)
+	fmt.Println("Start Best solution: ", geneticModel.BestSolution.RouteTime)
 
 	// init generation
 	generation := 0
@@ -162,25 +163,13 @@ func (geneticModel *GeneticModel) Run() Model.Solution {
 			newPopulation = append(newPopulation, elitism...)
 		}
 
-		for len(newPopulation) < geneticModel.Settings.PopulationSize {
-			// selection
-			parent1 := geneticModel.Selection(geneticModel.Population)
-			parent2 := geneticModel.Selection(geneticModel.Population)
-
-			// crossover
-			if rand.Float64() < geneticModel.Settings.CrossoverRate {
-				parent1, parent2 = geneticModel.Crossover(parent1, parent2)
-			}
-
-			// mutation
-			if rand.Float64() < geneticModel.Settings.MutationRate {
-				geneticModel.Mutation(&parent1)
-				geneticModel.Mutation(&parent2)
-			}
-
-			// add to new population
-			newPopulation = append(newPopulation, parent1, parent2)
+		wg := sync.WaitGroup{}
+		iterations := (geneticModel.Settings.PopulationSize - geneticModel.Settings.ElitismSize) / 2
+		wg.Add(iterations)
+		for i := 0; i < iterations; i++ {
+			go geneticModel.testeThread(&newPopulation, &wg)
 		}
+		wg.Wait()
 
 		// update population
 		geneticModel.Population = newPopulation
@@ -192,7 +181,6 @@ func (geneticModel *GeneticModel) Run() Model.Solution {
 		// update best solution
 		geneticModel.Population = sortByFitness(geneticModel.Population)
 		if geneticModel.Population[0].RouteTime < geneticModel.BestSolution.RouteTime {
-			println("New best solution found: ", geneticModel.Population[0].RouteTime)
 			geneticModel.BestSolution = Model.Solution{Route: make([]int, len(geneticModel.Population[0].Route)), City: geneticModel.Population[0].City}
 			copy(geneticModel.BestSolution.Route, geneticModel.Population[0].Route)
 			geneticModel.BestSolution.RouteTime = geneticModel.Population[0].RouteTime
@@ -203,6 +191,28 @@ func (geneticModel *GeneticModel) Run() Model.Solution {
 	}
 
 	return geneticModel.BestSolution
+}
+
+func (geneticModel *GeneticModel) testeThread(newPopulation *[]Model.Solution, wg *sync.WaitGroup) {
+
+	// selection
+	parent1 := geneticModel.Selection(geneticModel.Population)
+	parent2 := geneticModel.Selection(geneticModel.Population)
+
+	// crossover
+	if rand.Float64() < geneticModel.Settings.CrossoverRate {
+		parent1, parent2 = geneticModel.Crossover(parent1, parent2)
+	}
+
+	// mutation
+	if rand.Float64() < geneticModel.Settings.MutationRate {
+		geneticModel.Mutation(&parent1)
+		geneticModel.Mutation(&parent2)
+	}
+
+	// add to new population
+	*newPopulation = append(*newPopulation, parent1, parent2)
+	wg.Done()
 }
 
 func sortByFitness(population []Model.Solution) []Model.Solution {

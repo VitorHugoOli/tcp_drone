@@ -7,9 +7,8 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"tcp_drone/heuristics"
 	"tcp_drone/heuristics/builders_drone"
-	"tcp_drone/heuristics/global_search"
+	genetic2 "tcp_drone/heuristics/genetic"
 	local_search "tcp_drone/heuristics/local_search"
 	local_search_drone "tcp_drone/heuristics/local_search_drone"
 	"tcp_drone/model"
@@ -25,14 +24,14 @@ type Instance struct {
 
 func main() {
 	//model.Test()
-	heuristics.Test()
+	//heuristics.Test()
 
-	//instances, header := readInstances()
-	//appendHeader := func(s string) {
-	//	header = append(header, s)
-	//}
-	//processInstances(instances, appendHeader)
-	//renderTable(instances, header)
+	instances, header := readInstances()
+	appendHeader := func(s string) {
+		header = append(header, s)
+	}
+	processInstances(instances, appendHeader)
+	renderTable(instances, header)
 }
 
 func readInstances() ([]Instance, []string) {
@@ -63,7 +62,8 @@ func processInstances(instances []Instance, header func(s string)) {
 	header("Drone")
 	header("VND-Drone")
 	//header("VND-Drone")
-	header("SA-Drone")
+	//header("SA-Drone")
+	header("Genetic")
 	var wg sync.WaitGroup
 	wg.Add(len(instances))
 
@@ -90,7 +90,10 @@ func engine(instances []Instance, i int, group *sync.WaitGroup) {
 	sVndD, _ := local_search_drone.VndDrone(&instances[i].City, sDrone, nil)
 	instances[i].Solutions = append(instances[i].Solutions, *sVndD)
 
-	s, _ = global_search.SimulatedAnnealing(&instances[i].City, sVndD, nil)
+	//s, _ = global_search.SimulatedAnnealing(&instances[i].City, sVndD, nil)
+	//instances[i].Solutions = append(instances[i].Solutions, *s)
+	//
+	s, _ = genetic2.GeneticAlgorithm(&instances[i].City, sVndD, nil)
 	instances[i].Solutions = append(instances[i].Solutions, *s)
 
 	fmt.Println("Finished instance: " + instances[i].Name + " with solution: " + strconv.FormatFloat(s.RouteTime, 'f', 2, 64))

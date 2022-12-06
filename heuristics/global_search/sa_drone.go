@@ -65,7 +65,7 @@ func PerturbationNodes(newSolution *Model.Solution) {
 	// sort a number of nodes to be swapped
 	var dice int
 	for {
-		dice = rand.Intn(len(newSolution.Route))
+		dice = rand.Intn(6)
 		if dice >= 2 && dice%2 == 0 {
 			break
 		}
@@ -84,7 +84,7 @@ func PerturbationNodes(newSolution *Model.Solution) {
 
 	// 90% chance to swap the signal
 	for i := 0; i < len(arr); i++ {
-		if rand.Intn(2) == 0 {
+		if rand.Intn(10) < 5 {
 			newSolution.Route[arr[i]] = -newSolution.Route[arr[i]]
 		}
 	}
