@@ -1,52 +1,68 @@
 package genetic
 
 import (
-	"math"
 	"math/rand"
 	Model "tcp_drone/model"
+	"tcp_drone/utils"
 )
 
-type CrossOverFunc func(solution1, solution2 Model.Solution, params ...interface{}) []Model.Solution
+type CrossOverFunc func(solution1, solution2 Model.Solution, params ...interface{}) (Model.Solution, Model.Solution)
 
-// orderCrossover performs order crossover on two solutions
-func orderCrossover(solution1, solution2 Model.Solution, params ...interface{}) Model.Solution {
-	// init new solution
-	newSolution := Model.Solution{
-		Route: make([]int, len(solution1.Route)),
+// orderCrossover performs order crossover on two solutions and returns two new solutions
+func orderCrossover(solution1, solution2 Model.Solution, params ...interface{}) (Model.Solution, Model.Solution) {
+	var dice int
+	for dice%2 != 0 || dice > 2 || dice > len(solution1.City.Nodes)/2 {
+		dice = rand.Intn(len(solution1.City.Nodes))
 	}
 
-	// init random indexes
-	randomIndex1 := rand.Intn(len(solution1.Route))
-	randomIndex2 := rand.Intn(len(solution1.Route))
-
-	// init start and end indexes
-	startIndex := int(math.Min(float64(randomIndex1), float64(randomIndex2)))
-	endIndex := int(math.Max(float64(randomIndex1), float64(randomIndex2)))
-
-	// init used
-	used := make([]bool, len(solution1.Route))
-
-	// init new solution route
-	for i := startIndex; i <= endIndex; i++ {
-		newSolution.Route[i] = solution1.Route[i]
-		used[solution1.Route[i]] = true
+	var cities []int
+	for len(cities) < dice {
+		city := rand.Intn(len(solution1.City.Nodes))
+		if !utils.Contains(cities, city) && city != 0 {
+			cities = append(cities, city)
+		}
 	}
 
-	// init new solution route
-	for i := 0; i < len(solution1.Route); i++ {
-		if i >= startIndex && i <= endIndex {
-			continue
+	//create new solutions
+	var (
+		newSolution1 = Model.Solution{Route: make([]int, len(solution1.Route)), City: solution1.City}
+		newSolution2 = Model.Solution{Route: make([]int, len(solution2.Route)), City: solution2.City}
+	)
+
+	//copy route from parent solutions
+	copy(newSolution1.Route, solution1.Route)
+	copy(newSolution2.Route, solution2.Route)
+
+	swapCities(&newSolution1, &newSolution2, cities)
+
+	newSolution1.Fitness()
+	newSolution2.Fitness()
+
+	return newSolution1, newSolution2
+}
+
+func swapCities(solution1, solution2 *Model.Solution, cities []int) {
+	posCitiesSolution1 := make([]int, len(cities))
+	posCitiesSolution2 := make([]int, len(cities))
+
+	for i, e := range cities {
+		for i2, e2 := range solution1.Route {
+			if e == utils.Abs(e2) {
+				posCitiesSolution1[i] = i2
+			}
 		}
 
-		for j := 0; j < len(solution1.Route); j++ {
-			if !used[solution2.Route[j]] {
-				newSolution.Route[i] = solution2.Route[j]
-				used[solution2.Route[j]] = true
-				break
+		for i2, e2 := range solution2.Route {
+			if e == utils.Abs(e2) {
+				posCitiesSolution2[i] = i2
 			}
 		}
 	}
 
-	// return new solution
-	return newSolution
+	for i := 0; i < len(cities); i = i + 2 {
+		solution1.Route[posCitiesSolution1[i]] = solution2.Route[posCitiesSolution2[i+1]]
+		solution2.Route[posCitiesSolution2[i+1]] = solution1.Route[posCitiesSolution1[i]]
+		solution1.Route[posCitiesSolution1[i+1]] = solution2.Route[posCitiesSolution2[i]]
+		solution2.Route[posCitiesSolution2[i]] = solution1.Route[posCitiesSolution1[i+1]]
+	}
 }

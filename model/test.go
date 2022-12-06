@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"math/rand"
 )
 
 func Test() {
@@ -18,29 +17,33 @@ func Test() {
 	fmt.Println("DroneDistance[0][1]: ", c.DroneTimeDistance[0][1])
 
 	//Testing solution
-	println("Testing solution")
+	//println("Testing solution")
 	s := &Solution{}
 	s.Init(*c)
-	// populate route with nodesLen+2
-	for i := 0; i <= c.NodesLen; i++ {
-		if i == 0 || i == c.NodesLen {
-			s.Route[i] = 0
-		} else {
-			s.Route[i] = i
-		}
-	}
-	fmt.Println("Route: ", s.Route)
-	// shuffle route, except first and last
-	for i := 1; i < c.NodesLen-1; i++ {
-		j := rand.Intn(c.NodesLen-1) + 1
-		s.Route[i], s.Route[j] = s.Route[j], s.Route[i]
-	}
-	// calculate time
-	s.Calculate()
-	s.DebugPrint()
+	//// populate route with nodesLen+2
+	//for i := 0; i <= c.NodesLen; i++ {
+	//	if i == 0 || i == c.NodesLen {
+	//		s.Route[i] = 0
+	//	} else {
+	//		s.Route[i] = i
+	//	}
+	//}
+	//fmt.Println("Route: ", s.Route)
+	//// shuffle route, except first and last
+	//for i := 1; i < c.NodesLen-1; i++ {
+	//	j := rand.Intn(c.NodesLen-1) + 1
+	//	s.Route[i], s.Route[j] = s.Route[j], s.Route[i]
+	//}
+	//// calculate time
+	//s.Calculate()
+	//s.DebugPrint()
 
-	s.Route = []int{0, 21, -31, -48, -35, -34, -33, 38, -39, -37, -4, -14, -5, 23, 47, -36, -45, -43, -15, 49, 19, 22, 30, 17, 2, -44, -18, -40, -7, 8, 9, 42, 3, 24, 11, 27, 26, 25, 46, 13, 12, -51, -10, -50, 32, 28, 29, 20, 16, 41, 6, 1, 0}
-	s.Calculate()
+	//s.Route = []int{0, 21, -31, -48, -35, -34, -33, 38, -39, -37, -4, -14, -5, 23, 47, -36, -45, -43, -15, 49, 19, 22, 30, 17, 2, -44, -18, -40, -7, 8, 9, 42, 3, 24, 11, 27, 26, 25, 46, 13, 12, -51, -10, -50, 32, 28, 29, 20, 16, 41, 6, 1, 0}
+	s.Route = []int{0, 49, 47, 1, 11, 17, 19, 8, 39, 23, 43, 50, 6, 20, 28, 24, 22, 27, 15, 4, 7, -30, 46, 12, 18, 34, 29, -44, 21, 33, 41, 37, -45, 5, 14, 36, 16, 9, 38, 32, 40, 42, 13, 3, -31, 26, 25, 2, 35, 10, 48, 0}
+	//s.Calculate()
+	//s.DebugPrint()
+
+	s.Fitness()
 	s.DebugPrint()
 
 	//s.Route = []int{0, 21, 31, 48, 35, 34, 33, 38, 39, 37, 4, 14, 5, 23, 47, 36, 45, 43, 15, 49, 19, 22, 30, 17, 2, 44, 18, 40, 7, 8, 9, 32, 42, -3, 24, 11, 27, 26, 25, 46, 13, 12, 51, 10, 50, 28, 29, 6, 1, 41, 16, 20, 0}

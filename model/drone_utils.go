@@ -84,6 +84,20 @@ func (s *Solution) GetSubRoutes() []SubRoute {
 	return subRoutes
 }
 
+// AppendSubRoute append subroute to the solution
+func AppendSubRoute(subRoutes []SubRoute) []int {
+	var newRoute []int
+	for i, subRoute := range subRoutes {
+		if i == 0 {
+			newRoute = append(newRoute, subRoute.Route...)
+		} else {
+			newRoute = append(newRoute, subRoute.Route[1:]...)
+		}
+	}
+
+	return newRoute
+}
+
 // CalcCostDriver Calculate the cost of the solution with only driver
 func (s *Solution) CalcCostDriver(subRoute SubRoute, customer int, subSolution *SubSolution) float64 {
 	t := s.City.GetDriverTimeDistance

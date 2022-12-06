@@ -19,9 +19,9 @@ type SimulatedSettings struct {
 
 func defaultSimulatedSettings() SimulatedSettings {
 	return SimulatedSettings{
-		MaxTemp:   5000,
+		MaxTemp:   20000,
 		MinTemp:   0.1,
-		maxIter:   500,
+		maxIter:   200,
 		alpha:     0.9,
 		successes: 10,
 	}
@@ -50,49 +50,96 @@ func randomSolution(city *Model.City, solution *Model.Solution) *Model.Solution 
 	copy(newSolution.Route, solution.Route)
 	newSolution.RouteTime = solution.RouteTime
 
-	//subroutes := newSolution.GetSubRoutes()
-
-	//rand.Seed(time.Now().UnixNano())
-	//i := rand.Intn(len(subroutes)-2) + 1
-	//j := rand.Intn(len(subroutes)-2) + 1
-	//subroutes[i], subroutes[j] = subroutes[j], subroutes[i]
-	//
-	//// join subroutesand remove duplicates
-	//newSolution.Route = []int{}
-	//for _, subroute := range subroutes {
-	//	newSolution.Route = append(newSolution.Route, subroute.Route...)
-	//}
-	//
-	//newSolution.Route = removeDuplicates(newSolution.Route)
-
-	// shuffle the positives nodes at routes
-	for {
-		rand.Seed(time.Now().UnixNano())
-		i := rand.Intn(len(newSolution.Route)-2) + 1
-		j := rand.Intn(len(newSolution.Route)-2) + 1
-		if newSolution.Route[i] > 0 && newSolution.Route[j] > 0 {
-			newSolution.Route[i], newSolution.Route[j] = newSolution.Route[j], newSolution.Route[i]
-			break
-		}
-	}
-
 	// calculate new route time
+	PerturbationNodes(newSolution)
+	//PermutationSignal(newSolution)
+	//perturbationSubGroups(newSolution)
+
 	newSolution.Calculate()
 
 	return newSolution
 }
 
-func pertubation(newSolution *Model.Solution) {
+func PerturbationNodes(newSolution *Model.Solution) {
 	rand.Seed(time.Now().UnixNano())
-	i := rand.Intn(len(newSolution.Route)-2) + 1
-	j := rand.Intn(len(newSolution.Route)-2) + 1
+	// sort a number of nodes to be swapped
+	var dice int
+	for {
+		dice = rand.Intn(len(newSolution.Route))
+		if dice >= 2 && dice%2 == 0 {
+			break
+		}
+	}
 
-	newSolution.Route[i], newSolution.Route[j] = newSolution.Route[j], newSolution.Route[i]
+	// get the nodes to be swapped
+	arr := make([]int, dice)
+	for i := 0; i < dice; i++ {
+		arr[i] = rand.Intn(len(newSolution.Route)-2) + 1
+	}
+
+	// swap the nodes
+	for i := 0; i < len(arr)/2; i++ {
+		newSolution.Route[arr[i]], newSolution.Route[arr[len(arr)-1-i]] = newSolution.Route[arr[len(arr)-1-i]], newSolution.Route[arr[i]]
+	}
+
+	// 90% chance to swap the signal
+	for i := 0; i < len(arr); i++ {
+		if rand.Intn(2) == 0 {
+			newSolution.Route[arr[i]] = -newSolution.Route[arr[i]]
+		}
+	}
+}
+
+func PermutationSignal(solution *Model.Solution) {
+	var dice int
+	// role the dice again
+	for {
+		dice = rand.Intn(len(solution.Route))
+		if dice > 2 && dice%2 == 0 {
+			break
+		}
+	}
+
+	// get the nodes to be change signal
+	arr := make([]int, dice)
+	for i := 0; i < dice; i++ {
+		arr[i] = rand.Intn(len(solution.Route)-2) + 1
+	}
+
+	// change signal
+	for i := 0; i < len(arr); i++ {
+		solution.Route[arr[i]] = -solution.Route[arr[i]]
+	}
+}
+
+func perturbationSubGroups(solution *Model.Solution) {
+	subGroups := solution.GetSubRoutes()
+
+	//get two random subroutes with drone
+	rand.Seed(time.Now().UnixNano())
+	var i, j int
+
+	for {
+		i = rand.Intn(len(subGroups))
+		j = rand.Intn(len(subGroups))
+
+		if i != j && subGroups[i].OnlyDriver && subGroups[j].OnlyDriver && i != 0 && j != 0 && i != len(subGroups)-1 && j != len(subGroups)-1 {
+			break
+		}
+	}
+
+	subGroups[i].Route, subGroups[j].Route = subGroups[j].Route, subGroups[i].Route
+	//print route
+	solution.Route = Model.AppendSubRoute(subGroups)
+
 }
 
 func acceptanceProbability(currentRouteTime float64, newRouteTime float64, temp float64) bool {
 	if newRouteTime < currentRouteTime {
 		return true
+	}
+	if newRouteTime == math.MaxFloat64 {
+		return false
 	}
 	rand.Seed(time.Now().UnixNano())
 	return math.Exp((currentRouteTime-newRouteTime)/temp) > rand.Float64()
@@ -130,7 +177,7 @@ func simulatedAnnealing(city *Model.City, solution *Model.Solution, builderHeuri
 			iter++
 			tempSolution.Iterations++
 		}
-		//_, _ = local_search_drone.VndDrone(city, tempSolution, nil)
+		_, _ = local_search_drone.VndDrone(city, tempSolution, nil)
 		temp *= settings.alpha
 
 		if tempSolution.RouteTime < solution.RouteTime {

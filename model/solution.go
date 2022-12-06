@@ -41,6 +41,10 @@ func (s *Solution) Calculate() {
 	s.RouteTime = CalculateRouteTime(s.City, s.Route, nil)
 }
 
+func (s *Solution) Fitness() {
+	s.RouteTime = CalculateRouteTimeGenetic(s.City, s.Route, nil)
+}
+
 func (s *Solution) FindCustomerIndex(customer int) (int, bool) {
 	for i, c := range s.Route {
 		if utils.Abs(c) == utils.Abs(customer) {

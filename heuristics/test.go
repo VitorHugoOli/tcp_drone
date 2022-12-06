@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"tcp_drone/heuristics/builders"
 	"tcp_drone/heuristics/builders_drone"
+	genetic2 "tcp_drone/heuristics/genetic"
 	"tcp_drone/heuristics/global_search"
 	"tcp_drone/heuristics/local_search"
 	localDrone "tcp_drone/heuristics/local_search_drone"
@@ -26,7 +27,18 @@ func Test() {
 	//vnd(c)
 	//drone(c)
 	//vndDrone(c)
-	simulateAnnealing(c)
+	//simulateAnnealing(c)
+	genetic(c)
+}
+
+func genetic(c *Model.City) {
+	s, err := genetic2.GeneticAlgorithm(c, nil, nil)
+	if err != nil {
+		fmt.Println("\033[31m\033[1m", err, "\033[0m")
+		return
+	}
+	s.CheckRoute()
+	s.DebugPrint()
 }
 
 func simulateAnnealing(c *Model.City) {
@@ -107,5 +119,6 @@ func nearest(c *Model.City) (*Model.Solution, error, bool) {
 	}
 
 	s.DebugPrint()
+
 	return s, err, false
 }

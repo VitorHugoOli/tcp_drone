@@ -26,6 +26,34 @@ func CalculateRouteTime(city City, route []int, isAllowedWrong *bool) float64 {
 	return t
 }
 
+func CalculateRouteTimeGenetic(city City, route []int, isAllowedWrong *bool) float64 {
+	t := 0.0
+	driverLastPos := 0
+	hasDrone := false
+	for i := 1; i < len(route)-1; i++ {
+		customer := int(math.Abs(float64(route[i] * -1)))
+		if route[i] < 0 {
+			hasDrone = true
+			flightCost, isValid, _, _, jump := CalculateDroneFlightTime(city, route, i)
+			if !isValid {
+				return math.MaxFloat64
+			}
+			t += flightCost
+			i = jump
+			driverLastPos = route[i]
+		} else {
+			t += city.GetDriverTimeDistance(driverLastPos, customer)
+			driverLastPos = route[i]
+		}
+	}
+
+	//penalize if the solution does not use the drone
+	if !hasDrone {
+		t += 1000
+	}
+	return t
+}
+
 func CalculateDroneFlightTime(city City, route []int, startIndex int) (float64, bool, float64, float64, int) {
 	customer := utils.Abs(route[startIndex])
 	lr := city.DroneSettings.LaunchTime + city.DroneSettings.ReceiptTime

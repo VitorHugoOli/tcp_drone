@@ -1,7 +1,11 @@
 package genetic
 
 import (
+	"fmt"
 	"math/rand"
+	"sort"
+	"tcp_drone/heuristics/builders"
+	local_search_drone "tcp_drone/heuristics/local_search_drone"
 	Model "tcp_drone/model"
 )
 
@@ -39,26 +43,39 @@ type GeneticModel struct {
 	// Crossover
 	Crossover CrossOverFunc
 	// Mutation
-	Mutation func(solution *Model.Solution)
+	Mutation MutationFunc
 	//Stop condition
 	StopCondition func(generation int, population []Model.Solution) bool
 }
 
-func GeneticAlgorithm(city *Model.City, solution *Model.Solution) (*Model.Solution, error) {
+func GeneticAlgorithm(city *Model.City, solution *Model.Solution, builderHeuristic builders.BuilderHeuristic) (*Model.Solution, error) {
+	if solution == nil {
+		solution = &Model.Solution{}
+		e := solution.Init(*city)
+		if e != nil {
+			return nil, e
+		}
+	}
 	defer solution.Timer()()
 	geneticAlgorithm(city, solution)
 	return solution, nil
 }
 
 func geneticAlgorithm(city *Model.City, solution *Model.Solution) {
+	if solution.RouteTime == 0 {
+		_, _ = local_search_drone.VndDrone(city, solution, nil)
+	}
+
+	elitismSize := int(float64(len(city.Nodes)) * 0.1)
+
 	// init genetic model
 	geneticModel := GeneticModel{
 		Settings: GeneticSettings{
-			Generations:    100,
-			MutationRate:   0.1,
+			Generations:    10000,
+			MutationRate:   0.5,
 			CrossoverRate:  0.7,
 			Elitism:        true,
-			ElitismSize:    1,
+			ElitismSize:    elitismSize,
 			SelectionType:  "tournament",
 			CrossoverType:  "order",
 			MutationType:   "swap",
@@ -68,40 +85,45 @@ func geneticAlgorithm(city *Model.City, solution *Model.Solution) {
 	}
 
 	// init population
+	//geneticModel.Population = append(geneticModel.Population, *solution)
 	for i := 0; i < geneticModel.Settings.PopulationSize; i++ {
-		solution := Model.Solution{BuilderAlgorithm: "Genetic"}
-		solution.Init(*city)
-		geneticModel.Population = append(geneticModel.Population, solution)
+		_solution := Model.Solution{GlobalSearchAlgorithm: "Genetic"}
+		_solution.Init(*city)
+		_solution.Route = generateRandomRoute(city)
+		_solution.Fitness()
+		geneticModel.Population = append(geneticModel.Population, _solution)
 	}
+
+	//printPopulation(geneticModel)
 
 	// init selection
 	switch geneticModel.Settings.SelectionType {
 	case "tournament":
 		geneticModel.Selection = tournamentSelection
-	case "roulette":
-		geneticModel.Selection = rouletteSelection
-	case "rank":
-		geneticModel.Selection = rankSelection
+		//case "roulette":
+		//	geneticModel.Selection = rouletteSelection
+		//case "rank":
+		//	geneticModel.Selection = rankSelection
 	}
 
 	// init crossover
 	switch geneticModel.Settings.CrossoverType {
 	case "order":
 		geneticModel.Crossover = orderCrossover
-	case "pmx":
-		geneticModel.Crossover = pmxCrossover
-	case "ox":
-		geneticModel.Crossover = ox1Crossover
+		//case "pmx":
+		//	geneticModel.Crossover = pmxCrossover
+		//case "ox":
+		//	geneticModel.Crossover = ox1Crossover
 	}
 
 	// init mutation
 	switch geneticModel.Settings.MutationType {
 	case "swap":
 		geneticModel.Mutation = swapMutation
-	case "insert":
-		geneticModel.Mutation = insertMutation
-	case "scramble":
-		geneticModel.Mutation = scrambleMutation
+		//case "insert":
+		//	geneticModel.Mutation = insertMutation
+		//case "scramble":
+		//	geneticModel.Mutation = scrambleMutation
 	}
 
 	// init stop condition
@@ -110,73 +132,105 @@ func geneticAlgorithm(city *Model.City, solution *Model.Solution) {
 	}
 
 	// run genetic algorithm
-	geneticModel.Run(city)
-
+	*solution = geneticModel.Run()
 }
 
-func (geneticModel *GeneticModel) Run(city *Model.City) {
+func (geneticModel *GeneticModel) Run() Model.Solution {
+	geneticModel.Population = sortByFitness(geneticModel.Population)
 	// init best solution
-	geneticModel.BestSolution = geneticModel.Population[0]
+	geneticModel.BestSolution = Model.Solution{Route: make([]int, len(geneticModel.Population[0].Route)), City: geneticModel.Population[0].City}
+	copy(geneticModel.BestSolution.Route, geneticModel.Population[0].Route)
+	geneticModel.BestSolution.RouteTime = geneticModel.Population[0].RouteTime
+
+	fmt.Println("Best Start solution: ", geneticModel.BestSolution.RouteTime)
 
 	// init generation
 	generation := 0
 
 	// run genetic algorithm
 	for !geneticModel.StopCondition(generation, geneticModel.Population) {
+
 		// init new population
 		newPopulation := make([]Model.Solution, 0)
-
-		// init fitness
-		fitness := make([]float64, 0)
-
-		// calculate fitness
-		for _, solution := range geneticModel.Population {
-			fitness = append(fitness, 1/solution.RouteTime)
-		}
 
 		// init elitism
 		if geneticModel.Settings.Elitism {
 			elitism := make([]Model.Solution, 0)
 			for i := 0; i < geneticModel.Settings.ElitismSize; i++ {
-				elitism = append(elitism, geneticModel.BestSolution)
+				elitism = append(elitism, geneticModel.Population[i])
 			}
 			newPopulation = append(newPopulation, elitism...)
 		}
 
-		// selection
-		selected := geneticModel.Selection(geneticModel.Population, fitness)
+		for len(newPopulation) < geneticModel.Settings.PopulationSize {
+			// selection
+			parent1 := geneticModel.Selection(geneticModel.Population)
+			parent2 := geneticModel.Selection(geneticModel.Population)
 
-		// crossover
-		for i := 0; i < len(selected); i += 2 {
-			parent1 := geneticModel.Population[selected[i]]
-			parent2 := geneticModel.Population[selected[i+1]]
-			child1, child2 := geneticModel.Crossover(parent1, parent2)
-			newPopulation = append(newPopulation, Model.Solution{Route: child1}, Model.Solution{Route: child2})
-		}
-
-		// mutation
-		for i := 0; i < len(newPopulation); i++ {
-			if rand.Float64() < geneticModel.Settings.MutationRate {
-				geneticModel.Mutation(&newPopulation[i])
+			// crossover
+			if rand.Float64() < geneticModel.Settings.CrossoverRate {
+				parent1, parent2 = geneticModel.Crossover(parent1, parent2)
 			}
-		}
 
-		// calculate fitness
-		for i := 0; i < len(newPopulation); i++ {
-			newPopulation[i].Calculate()
+			// mutation
+			if rand.Float64() < geneticModel.Settings.MutationRate {
+				geneticModel.Mutation(&parent1)
+				geneticModel.Mutation(&parent2)
+			}
+
+			// add to new population
+			newPopulation = append(newPopulation, parent1, parent2)
 		}
 
 		// update population
 		geneticModel.Population = newPopulation
 
+		for i := 0; i < len(geneticModel.Population); i++ {
+			geneticModel.Population[i].Fitness()
+		}
+
 		// update best solution
-		for _, solution := range geneticModel.Population {
-			if solution.RouteTime < geneticModel.BestSolution.RouteTime {
-				geneticModel.BestSolution = solution
-			}
+		geneticModel.Population = sortByFitness(geneticModel.Population)
+		if geneticModel.Population[0].RouteTime < geneticModel.BestSolution.RouteTime {
+			println("New best solution found: ", geneticModel.Population[0].RouteTime)
+			geneticModel.BestSolution = Model.Solution{Route: make([]int, len(geneticModel.Population[0].Route)), City: geneticModel.Population[0].City}
+			copy(geneticModel.BestSolution.Route, geneticModel.Population[0].Route)
+			geneticModel.BestSolution.RouteTime = geneticModel.Population[0].RouteTime
 		}
 
 		// update generation
 		generation++
+	}
+
+	return geneticModel.BestSolution
+}
+
+func sortByFitness(population []Model.Solution) []Model.Solution {
+
+	sort.Slice(population, func(i, j int) bool {
+		return population[i].RouteTime < population[j].RouteTime
+	})
+
+	return population
+}
+
+// generate random route solutions, first and last city is 0
+func generateRandomRoute(city *Model.City) []int {
+	route := make([]int, 0)
+	for i := 0; i < len(city.Nodes); i++ {
+		route = append(route, i)
+	}
+	rand.Shuffle(len(route), func(i, j int) {
+		if i != j && i != 0 && j != 0 {
+			route[i], route[j] = route[j], route[i]
+		}
+	})
+	route = append(route, 0)
+	return route
+}
+
+func printPopulation(geneticModel GeneticModel) {
+	for i := 0; i < len(geneticModel.Population); i++ {
+		fmt.Println(geneticModel.Population[i].Route, geneticModel.Population[i].RouteTime)
 	}
 }
